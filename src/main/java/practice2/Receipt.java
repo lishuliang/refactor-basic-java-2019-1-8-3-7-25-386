@@ -13,17 +13,8 @@ public class Receipt {
     private BigDecimal tax;
 
     public double CalculateGrandTotal(List<Product> products, List<OrderItem> items) {
-        BigDecimal subTotal = calculateSubtotal(products, items);
+        BigDecimal subTotal = subTotalAfterReducePrice(products, items, calculateSubtotal(products, items));
 
-        for (Product product : products) {
-            OrderItem curItem = findOrderItemByProduct(items, product);
-
-            BigDecimal reducedPrice = product.getPrice()
-                    .multiply(product.getDiscountRate())
-                    .multiply(new BigDecimal(curItem.getCount()));
-
-            subTotal = subTotal.subtract(reducedPrice);
-        }
         BigDecimal taxTotal = subTotal.multiply(tax);
         BigDecimal grandTotal = subTotal.add(taxTotal);
 
@@ -32,14 +23,12 @@ public class Receipt {
 
 
     private OrderItem findOrderItemByProduct(List<OrderItem> items, Product product) {
-        OrderItem curItem = null;
         for (OrderItem item : items) {
             if (item.getCode() == product.getCode()) {
-                curItem = item;
-                break;
+                return item;
             }
         }
-        return curItem;
+        return null;
     }
 
     private BigDecimal calculateSubtotal(List<Product> products, List<OrderItem> items) {
@@ -51,4 +40,20 @@ public class Receipt {
         }
         return subTotal;
     }
+
+    private BigDecimal subTotalAfterReducePrice(List<Product> products, List<OrderItem> items, BigDecimal subTotal) {
+        for (Product product : products) {
+            subTotal = subTotal.subtract(taxReduceForProduct(items, product));
+        }
+        return subTotal;
+    }
+
+    private BigDecimal taxReduceForProduct(List<OrderItem> items, Product product) {
+        OrderItem curItem = findOrderItemByProduct(items, product);
+
+        return product.getPrice()
+                .multiply(product.getDiscountRate())
+                .multiply(new BigDecimal(curItem.getCount()));
+    }
+
 }
